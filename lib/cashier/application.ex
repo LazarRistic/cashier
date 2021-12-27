@@ -6,15 +6,14 @@ defmodule Cashier.Application do
   use Application
 
   @impl true
+  @doc false
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Cashier.Worker.start_link(arg)
-      # {Cashier.Worker, arg}
+      {Registry, [name: Cashier.Registry.Checkout, keys: :unique]},
+      {DynamicSupervisor, [name: Cashier, strategy: :one_for_one]}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Cashier.Supervisor]
+    opts = [strategy: :one_for_one]
     Supervisor.start_link(children, opts)
   end
 end
