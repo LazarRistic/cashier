@@ -2,8 +2,8 @@ defmodule Cashier do
   @moduledoc """
     Documentation for `Cashier`.
   """
-  alias Cashier.Boundary.Checkout
-  alias Cashier.Core.Product
+  alias Cashier.Boundary.{Checkout, BasketValidator, ProductValidator}
+  alias Cashier.Core.{Product, Basket}
   use DynamicSupervisor
 
   @type uuid :: <<_::288>>
@@ -41,20 +41,22 @@ defmodule Cashier do
   def new(name, pricing_rules) when is_map(pricing_rules) do
     # with {:ok, pid} <- checkout(Checkout.via(name)),
     with {:ok, _pid} <-
-           DynamicSupervisor.start_child(__MODULE__, {Checkout, [name: Checkout.via(name)]}) do
+           DynamicSupervisor.start_child(__MODULE__, {Checkout, [name: Checkout.via(name)]}),
+         %Basket{} = basket <- Basket.new(pricing_rules),
+         :ok <- BasketValidator.errors(basket) do
       Checkout.new(name, pricing_rules)
     end
   end
 
   def new(_, _), do: {:error, "Pricing Rules must be a map"}
 
-  @spec scan(String.t(), String.t()) :: :ok | {atom(), String.t()}
+  @spec scan(String.t(), Product.t() | String.t()) :: :ok | {atom(), String.t()}
   @doc ~S"""
     Adds `Product` to 'Basket' and updates total price of `Basket` not counting pricing rules and updates state
 
     ## Examples
 
-        iex> Cashier.scan("Lazar Ristic", "GR1")
+        iex> Cashier.scan("Lazar Ristic", Cashier.Core.Product.find("GR1"))
         %Cashier.Core.Basket{
           pricing_rules: %{
             "CF1" => [Cashier.Core.PricingRule.ThreeOrMoreForOneThirdsOffPrice],
@@ -72,9 +74,19 @@ defmodule Cashier do
           uuid: "72eb3e38-5019-486d-b57e-d6f7fd160dfa"
         }
   """
-  def scan(name, product_code) do
-    with %Product{} = product <- Product.find(product_code), do: Checkout.scan(name, product)
+  def scan(name, %Product{} = product) do
+    with :ok <- ProductValidator.errors(product) do
+      Checkout.scan(name, product)
+    else
+      error -> error
+    end
   end
+
+  def scan(name, product_code) when is_binary(product_code) do
+    scan(name, Product.find(product_code))
+  end
+
+  def scan(_name, _product), do: {:error, "product must be struct of `Product` or product code"}
 
   @spec total(String.t()) :: String.t()
   @doc ~S"""
