@@ -1,5 +1,18 @@
 # Cashier
 
+## Usage
+```elixir
+name = "CASHIERS_NAME_HERE"
+pricing_rules = %{
+  "GR1" => [Cashier.Core.PricingRule.BOGO],
+  "SR1" => [Cashier.Core.PricingRule.ThreeOrMoreForFivePenceOff],
+  "CF1" => [Cashier.Core.PricingRule.ThreeOrMoreForOneThirdsOffPrice],
+}
+Cashier.new name, pricing_rules
+Cashier.scan name, "GR1"
+Cashier.scan name, %Cashier.Core.Product{code: "GR1", name: "Green tea", price: Money.new(3_11, :GBP)}
+Cashier.total name
+```
 ## Description
 
 You are the lead programmer for a small chain of supermarkets. You are required to make a simple
@@ -25,20 +38,10 @@ to two thirds of the original price.
 Our check-out can scan items in any order, and because the CEO and COO change their minds often,
 it needs to be flexible regarding our pricing rules.
 
-## Installation
+## Product
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `cashier` to your list of dependencies in `mix.exs`:
+Product are located in Mix configuration file.
 
-```elixir
-def deps do
-  [
-    {:cashier, "~> 0.1.0"}
-  ]
-end
-```
+## Pricing rules
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/cashier](https://hexdocs.pm/cashier).
-
+Pricing rules are in form of map, where key is product code and value is list of modules that use's `PricingRule` behavior

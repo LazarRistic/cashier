@@ -39,7 +39,6 @@ defmodule Cashier do
         :ok
   """
   def new(name, pricing_rules) when is_map(pricing_rules) do
-    # with {:ok, pid} <- checkout(Checkout.via(name)),
     with {:ok, _pid} <-
            DynamicSupervisor.start_child(__MODULE__, {Checkout, [name: Checkout.via(name)]}),
          %Basket{} = basket <- Basket.new(pricing_rules),
